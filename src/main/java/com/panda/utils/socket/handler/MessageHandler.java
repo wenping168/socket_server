@@ -1,5 +1,6 @@
 package com.panda.utils.socket.handler;
 
+import com.panda.utils.socket.dto.GetCarPositionDto;
 import com.panda.utils.socket.dto.ServerReceiveDto;
 import com.panda.utils.socket.server.Connection;
 
@@ -16,5 +17,5 @@ public interface MessageHandler {
 	 * @param connection 封装了客户端的socket
 	 * @param dto        接收到的dto
 	 */
-	void onReceive(Connection connection, ServerReceiveDto dto);
+	void onReceive(Connection connection, GetCarPositionDto dto);
 }

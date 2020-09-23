@@ -45,10 +45,11 @@ public class SocketServerController {
 		}
 		Connection connection = socketServer.getExistSocketMap().get(paramVo.getParkId());
 		ServerSendDto dto = new ServerSendDto();
-		dto.setFunctionCode(FunctionCodeEnum.MESSAGE.getValue());
+		/*dto.setFunctionCode(FunctionCodeEnum.MESSAGE.getValue());
 		dto.setStatusCode(20000);
 		dto.setMessage(paramVo.getMessage());
-		connection.println(JSONObject.toJSONString(dto));
+		connection.println(JSONObject.toJSONString(dto));*/
+		connection.println(paramVo.getMessage()+"\r\n");
 		return ResponseEntity.success();
 	}
 }

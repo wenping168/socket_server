@@ -1,17 +1,18 @@
 package com.panda.utils.socket.server;
 
 import com.alibaba.fastjson.JSONObject;
-import com.panda.utils.socket.dto.ServerReceiveDto;
-import com.panda.utils.socket.dto.ServerSendDto;
+import com.panda.utils.socket.dto.*;
 import com.panda.utils.socket.enums.FunctionCodeEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.DigestUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Date;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 每一个client连接开一个线程
@@ -66,7 +67,7 @@ public class ConnectionThread extends Thread {
 				String message;
 				while ((message = reader.readLine()) != null) {
 					log.info("服务端收到消息：" + message);
-					ServerReceiveDto receiveDto;
+					/*ServerReceiveDto receiveDto;
 					try {
 						receiveDto = JSONObject.parseObject(message, ServerReceiveDto.class);
 					} catch (Exception e) {
@@ -76,16 +77,18 @@ public class ConnectionThread extends Thread {
 						connection.println(JSONObject.toJSONString(dto));
 						break;
 					}
-					Integer functionCode = receiveDto.getFunctionCode();
-					if (functionCode.equals(FunctionCodeEnum.HEART.getValue())) {
+					Integer functionCode = receiveDto.getFunctionCode();*/
+
+					if (message.contains("USERSTATE")) {
 						//心跳类型
 						connection.setLastOnTime(new Date());
-						ServerSendDto dto = new ServerSendDto();
+						/*ServerSendDto dto = new ServerSendDto();
 						dto.setFunctionCode(FunctionCodeEnum.HEART.getValue());
-						connection.println(JSONObject.toJSONString(dto));
-					} else if (functionCode.equals(FunctionCodeEnum.LOGIN.getValue())) {
+						dto.setMessage("服务端💗💗💗");*/
+						connection.println("服务端心跳包"+"\r\n");
+					} else if ( message.startsWith("Parking-Dongyang")) {
 						//登陆，身份验证
-						String parkId = receiveDto.getParkId();
+						String parkId = message;
 						if (socketServer.getLoginHandler().canLogin(parkId)) {
 							connection.setLogin(true);
 							connection.setParkId(parkId);
@@ -98,10 +101,16 @@ public class ConnectionThread extends Thread {
 								dto.setErrorMessage("force logout");
 								existConnection.println(JSONObject.toJSONString(dto));
 								existConnection.getConnectionThread().stopRunning();
-								log.error("用户被客户端重入踢出，parkId:{}", parkId);
+								log.error("========用户被客户端重入踢出，parkId:{}", parkId);
 							}
 							//添加到已登录map中
 							socketServer.getExistSocketMap().put(parkId, connection);
+							/*ServerSendDto serverSendDto = new ServerSendDto();
+							serverSendDto.setFunctionCode(FunctionCodeEnum.MESSAGE.getValue());
+							serverSendDto.setMessage("GETPARKID");
+							connection.println(JSONObject.toJSONString(serverSendDto));*/
+							log.info("登录成功");
+							connection.println("GETPARKID 15"+"\r\n");
 						} else {
 							//用户鉴权失败
 							ServerSendDto dto = new ServerSendDto();
@@ -111,14 +120,30 @@ public class ConnectionThread extends Thread {
 							connection.println(JSONObject.toJSONString(dto));
 							log.error("用户鉴权失败,parkId:{}", parkId);
 						}
-					} else if (functionCode.equals(FunctionCodeEnum.MESSAGE.getValue())) {
+					} else if (message.startsWith("GET_CAR_POSITION")) {
+						log.info("很重要的message：{}" , message );
+						String start = "GET_CAR_POSITION" ;
+						String jsonString = message.substring(start.length()) ;
+						GetCarPositionDto getCarPositionDto = JSONObject.parseObject(jsonString , GetCarPositionDto.class);
+						Position position = getCarPositionDto.getPosition().get(0) ;
+						log.info("=================最终的结果 position：{}" , position);
 						//发送一些其他消息等
-						socketServer.getMessageHandler().onReceive(connection, receiveDto);
-					} else if (functionCode.equals(FunctionCodeEnum.CLOSE.getValue())) {
+						socketServer.getMessageHandler().onReceive(connection, getCarPositionDto);
+					} else if (message.startsWith("GETPARKID") ){
+						log.info("收到signature的信息了,signature: {}" , message);
+						//GETPARKID{"parkId":"1","time":"2015-11-24 10:33:58","signature":"112233afadf"}\r\n
+						String jsonString = message.substring(9) ;
+						GetParkIdDto receiveDto = JSONObject.parseObject(jsonString, GetParkIdDto.class);
+						String str = receiveDto.getParkId() + receiveDto.getTime() ;
+						if(!receiveDto.getSignature().equals(DigestUtils.md5DigestAsHex(str.getBytes()))){
+							log.info("signature 不一样");
+							this.stopRunning();
+						}
+					}/*else if (functionCode.equals(FunctionCodeEnum.CLOSE.getValue())) {
 						//主动关闭客户端socket
 						log.info("客户端主动登出socket");
 						this.stopRunning();
-					}
+					}*/
 
 				}
 			} catch (IOException e) {

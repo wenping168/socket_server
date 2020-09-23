@@ -26,6 +26,10 @@ public enum FunctionCodeEnum {
 	 */
 	MESSAGE(3, "发送消息");
 
+	/**
+	 * 心跳信息
+	 */
+
 	private Integer value;
 
 	private String desc;

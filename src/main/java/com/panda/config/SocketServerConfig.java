@@ -16,6 +16,7 @@ public class SocketServerConfig {
 
 	@Bean
 	public SocketServer socketServer() {
+
 		SocketServer socketServer = new SocketServer(60000);
 		socketServer.setLoginHandler(parkId -> {log.info("处理socket用户身份验证,parkId:{}", parkId);
 			//用户名中包含了dingxu则允许登陆
